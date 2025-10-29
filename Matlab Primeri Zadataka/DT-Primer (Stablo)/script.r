@@ -34,6 +34,7 @@ rm(data)
 str(dataSub)
 
 #provera nedostajucih vrednosti
+//u cheatsheetu "apply" i drugi
 apply(dataSub, 2, function(x) sum(is.na(x)))
 apply(dataSub, 2, function(x) sum(x == "", na.rm = T))
 apply(dataSub, 2, function(x) sum(x == "-", na.rm = T))
@@ -41,11 +42,11 @@ apply(dataSub, 2, function(x) sum(x == " ", na.rm = T))
 
 # varijablu Surname necemo ukljuciti u model iz razloga sto je u pitanju 
 karakter varijabla sa previse
-# razlicitih vrednosti
+# razlicitih vrednosti ako je preko 30 posto onda sigurno iskljucujemo
 length(unique(dataSub$Surname))
 dataSub$Surname <- NULL
 
-# varijabla Geography NA i - vrednosti tako da cemo ih zameniti dominantnom klasom i pretvoriti u faktorsku varijablu
+# varijabla Geography ima NA i - vrednosti tako da cemo ih zameniti dominantnom klasom i pretvoriti u faktorsku varijablu
 length(unique(dataSub$Geography))
 sort(table(dataSub$Geography))
 dataSub$Geography[dataSub$Geography == "-" | is.na(dataSub$Geography)] <- 'France'
@@ -67,7 +68,7 @@ dataSub$IsActiveMember <- factor(dataSub$IsActiveMember, levels = 0:1, labels = 
 //ovde moze samo i as.factor
 
 library(ggplot2)
-
+//kucas u cheatsheet "ggplot2"
 # na grafiku vidimo da se vrednosti za CreditScore ne razlikuju mnogo u pogledu izlazne varijable tako da ovu
 # varijablu necemo koristiti za model
 ggplot(dataSub, aes(x = CreditScore, fill = Stayed)) + geom_density(alpha = 0.55) + theme_minimal()
@@ -134,22 +135,25 @@ ggplot(dataSub, aes(x = IsActiveMember, fill = Stayed)) + geom_bar(position = 'd
 ggplot(dataSub, aes(x = Card.Type, fill = Stayed)) + geom_bar(position = 'fill', width = 0.5) + theme_minimal()
 dataSub$Card.Type <- NULL
 
+//u cheatsheetu "createdatapartition", za trening i test
 library(caret)
 # delimo dataset na trening(80% pocetnog dataseta) i test(20% pocetnog dataseta)
 set.seed(1)
 train_indices <- createDataPartition(dataSub$Stayed, p = 0.8, list = FALSE)
-//nazovi ga train_podaci u picku materinu
-train_data <- dataSub[train_indices,]
-test_data <- dataSub[-train_indices,]
-
+//nazovi ga indexes kao sto pise u cheatsheetu
+train_data <- dataSub[train_indices,]//moze trainpartition
+test_data <- dataSub[-train_indices,]//moze testpartition
+ 
+//u cheatsheetu "e1071" 2. u pretrazi za odredjivanje cp vrednosti
 library(rpart)
 library(e1071)
 
 # definisemo da cemo za odredjivanje cp vrednosti koristiti 10-fold cross-validation
-# definisemo u kom rasponu vredsnoti trazimo najbolju vrednost cp parametra
-tr_ctrl <- trainControl(method = 'cv', number = 10)
-cp_grid <- expand.grid(.cp = seq(0.01, 0.05, 0.001))
+# definisemo u kom rasponu vrednosti trazimo najbolju vrednost cp parametra
+tr_ctrl <- trainControl(method = 'cv', number = 10)//ostavi folds
+cp_grid <- expand.grid(.cp = seq(0.01, 0.05, 0.001))//ostavi cpGrid
 
+//ovo se nastavlja na ovo gore iz cheatsheeta samo moras da dodas ovaj set.seed(1)
 # pokrecemo kros-validaciju, a kako je u pitanju probabilisticki proces moramo podesiti seed vrednost 
 set.seed(1)
 cv <- train(x = train_data[, -7],
@@ -173,10 +177,12 @@ cv <- train(
 best_cp <- cv$bestTune$cp
 
 # kreiramo model sa nadjenom cp vrednoscu
+//znaci ide "model" 27. rezultat pretrage samo opet treba da se ne zaboravi set.seed(1)
 set.seed(1)
 model <- rpart(Stayed ~ ., data = train_data, control = rpart.control(cp = best_cp))
 model
 # pravimo predikcije
+//idemo na "predict(" 2. rezultat pretrage
 model_pred <- predict(model, newdata = test_data, type = 'class')
 
 #kreiramo matricu konfuzije
